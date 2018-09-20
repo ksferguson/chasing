@@ -2,6 +2,8 @@
 
 data/
 awd-lstm-lm/data
+src/awd-lstm-lm/data
+src/model/awd-lstm-lm/data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
