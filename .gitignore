@@ -6,6 +6,9 @@ awd-lstm-lm/data
 src/awd-lstm-lm/data
 src/model/awd-lstm-lm/data
 
+#saved models
+*.pt
+
 =======
 >>>>>>> parent of 31653c1... added salesforce/awd-lstm-lm project files
 # Byte-compiled / optimized / DLL files
