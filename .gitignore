@@ -9,6 +9,9 @@ src/model/awd-lstm-lm/data
 #saved models
 *.pt
 
+#saved corpus
+*.data
+
 =======
 >>>>>>> parent of 31653c1... added salesforce/awd-lstm-lm project files
 # Byte-compiled / optimized / DLL files
