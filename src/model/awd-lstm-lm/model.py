@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 from embed_regularize import embedded_dropout
 from locked_dropout import LockedDropout
@@ -90,7 +91,8 @@ class RNNModel(nn.Module):
         output = self.lockdrop(raw_output, self.dropout)
         outputs.append(output)
 
-        result = output.view(output.size(0)*output.size(1), output.size(2))
+        decoded = self.decoder(output.view(output.size(0)*output.size(1), output.size(2)))
+        result = decoded.view(output.size(0), output.size(1), decoded.size(1))
         if return_h:
             return result, hidden, raw_outputs, outputs
         return result, hidden
@@ -98,9 +100,9 @@ class RNNModel(nn.Module):
     def init_hidden(self, bsz):
         weight = next(self.parameters()).data
         if self.rnn_type == 'LSTM':
-            return [(weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_(),
-                    weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_())
+            return [(Variable(weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_()),
+                    Variable(weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_()))
                     for l in range(self.nlayers)]
         elif self.rnn_type == 'QRNN' or self.rnn_type == 'GRU':
-            return [weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_()
+            return [Variable(weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_())
                     for l in range(self.nlayers)]

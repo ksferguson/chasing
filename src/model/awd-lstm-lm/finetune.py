@@ -5,6 +5,7 @@ import numpy as np
 np.random.seed(331)
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 import data
 import model
