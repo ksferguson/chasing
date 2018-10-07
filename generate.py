@@ -162,6 +162,7 @@ with open(args.outf, 'w') as outf:
                 ptr_dist = (ptr_attn.expand_as(valid_next_word) * valid_next_word).sum(0).squeeze()
                 p = lambdah * ptr_dist + (1 - lambdah) * vocab_loss
             #     ###
+            # mult unk embedding * rnn_out, balnce with params like cache theta, lambdah   
             #     target_loss = p[targets[idx].data]
             #     loss += (-torch.log(target_loss)).data[0]
 
