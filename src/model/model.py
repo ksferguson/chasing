@@ -1,3 +1,13 @@
+###############################################################################
+# Language Modeling for Rare Words
+#
+# This file initially cloned from:
+# https://github.com/salesforce/awd-lstm-lm.git
+# Tag: PyTorch==0.1.12
+# See LICENSE_awd-lstm-lm for original LICENSE
+#
+###############################################################################
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable

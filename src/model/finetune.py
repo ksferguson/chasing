@@ -1,7 +1,18 @@
+###############################################################################
+# Language Modeling for Rare Words
+#
+# This file initially cloned from:
+# https://github.com/salesforce/awd-lstm-lm.git
+# Tag: PyTorch==0.1.12
+# See LICENSE_awd-lstm-lm for original LICENSE
+#
+###############################################################################
+
 import argparse
 import time
 import math
 import numpy as np
+np.random.seed(331)
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -15,7 +26,7 @@ parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Lang
 parser.add_argument('--data', type=str, default='data/penn/',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
-                    help='type of recurrent net (LSTM, QRNN, GRU)')
+                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
 parser.add_argument('--emsize', type=int, default=400,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=1150,
@@ -64,7 +75,6 @@ parser.add_argument('--wdecay', type=float, default=1.2e-6,
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
-np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
     if not args.cuda:
@@ -104,8 +114,8 @@ criterion = nn.CrossEntropyLoss()
 
 def evaluate(data_source, batch_size=10):
     # Turn on evaluation mode which disables dropout.
-    model.eval()
     if args.model == 'QRNN': model.reset()
+    model.eval()
     total_loss = 0
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(batch_size)
@@ -131,7 +141,7 @@ def train():
         # Prevent excessively small or negative sequence lengths
         seq_len = max(5, int(np.random.normal(bptt, 5)))
         # There's a very small chance that it could select a very long sequence length resulting in OOM
-        # seq_len = min(seq_len, args.bptt + 10)
+        seq_len = min(seq_len, args.bptt + 10)
 
         lr2 = optimizer.param_groups[0]['lr']
         optimizer.param_groups[0]['lr'] = lr2 * seq_len / args.bptt
@@ -172,14 +182,20 @@ def train():
         batch += 1
         i += seq_len
 
+
+# Load the best saved model.
+with open(args.save, 'rb') as f:
+    model = torch.load(f)
+
+
 # Loop over epochs.
 lr = args.lr
+stored_loss = evaluate(val_data)
 best_val_loss = []
-stored_loss = 100000000
-
 # At any point you can hit Ctrl + C to break out of training early.
 try:
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
+    #optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
+    optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         train()
@@ -205,25 +221,13 @@ try:
             for prm in model.parameters():
                 prm.data = tmp[prm].clone()
 
-        else:
-            val_loss = evaluate(val_data, eval_batch_size)
-            print('-' * 89)
-            print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                    'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                               val_loss, math.exp(val_loss)))
-            print('-' * 89)
-
-            if val_loss < stored_loss:
-                with open(args.save, 'wb') as f:
-                    torch.save(model, f)
-                print('Saving Normal!')
-                stored_loss = val_loss
-
-            if 't0' not in optimizer.param_groups[0] and (len(best_val_loss)>args.nonmono and val_loss > min(best_val_loss[:-args.nonmono])):
-                print('Switching!')
-                optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
-                #optimizer.param_groups[0]['lr'] /= 2.
-            best_val_loss.append(val_loss)
+        if (len(best_val_loss)>args.nonmono and val_loss2 > min(best_val_loss[:-args.nonmono])):
+            print('Done!')
+            import sys
+            sys.exit(1)
+            optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
+            #optimizer.param_groups[0]['lr'] /= 2.
+        best_val_loss.append(val_loss2)
 
 except KeyboardInterrupt:
     print('-' * 89)
