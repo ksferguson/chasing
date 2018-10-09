@@ -7,7 +7,6 @@
 # See LICENSE_awd-lstm-lm for original LICENSE
 #
 ###############################################################################
-
 from torch.autograd import Variable
 
 def repackage_hidden(h):

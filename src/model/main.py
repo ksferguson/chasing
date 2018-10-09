@@ -7,11 +7,11 @@
 # See LICENSE_awd-lstm-lm for original LICENSE
 #
 ###############################################################################
-
 import argparse
 import time
 import math
 import numpy as np
+np.random.seed(331)
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -22,10 +22,10 @@ import model
 from utils import batchify, get_batch, repackage_hidden
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
-parser.add_argument('--data', type=str, default='data/penn/',
+parser.add_argument('--data', type=str, default='/root/WT2',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
-                    help='type of recurrent net (LSTM, QRNN, GRU)')
+                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
 parser.add_argument('--emsize', type=int, default=400,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=1150,
@@ -74,7 +74,6 @@ parser.add_argument('--wdecay', type=float, default=1.2e-6,
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
-np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
     if not args.cuda:
@@ -115,7 +114,6 @@ criterion = nn.CrossEntropyLoss()
 def evaluate(data_source, batch_size=10):
     # Turn on evaluation mode which disables dropout.
     model.eval()
-    if args.model == 'QRNN': model.reset()
     total_loss = 0
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(batch_size)
@@ -130,7 +128,6 @@ def evaluate(data_source, batch_size=10):
 
 def train():
     # Turn on training mode which enables dropout.
-    if args.model == 'QRNN': model.reset()
     total_loss = 0
     start_time = time.time()
     ntokens = len(corpus.dictionary)

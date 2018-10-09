@@ -1,3 +1,12 @@
+###############################################################################
+# Language Modeling for Rare Words
+#
+# This file initially cloned from:
+# https://github.com/salesforce/awd-lstm-lm.git
+# See src/model/LICENSE_awd-lstm-lm for original LICENSE
+#
+###############################################################################
+
 echo "=== Acquiring datasets ==="
 echo "---"
 mkdir -p save

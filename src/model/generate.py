@@ -1,15 +1,12 @@
 ###############################################################################
 # Language Modeling for Rare Words
 #
-# Generates from given context sentence (one sentence at a time).
-#
 # This file initially cloned from:
 # https://github.com/salesforce/awd-lstm-lm.git
 # Tag: PyTorch==0.1.12
 # See LICENSE_awd-lstm-lm for original LICENSE
 #
 ###############################################################################
-
 import argparse
 
 import numpy as np
@@ -92,7 +89,7 @@ print(args.context)
 
 #warm up routine
 if args.warmup:
-    print('** warmup **')
+    #print('** warmup **')
     warmup_str = ''
     with open(args.warmupf) as warmupf:
         warmup_data = warmupf.read()
@@ -139,6 +136,7 @@ if len (args.context) > 0:
 
 
 pred_str = ''
+pred_str2 = ''
 print('** start pred w ptr **')
 with open(args.outf, 'w') as outf:
     for i in range(args.words):
@@ -167,17 +165,23 @@ with open(args.outf, 'w') as outf:
                 ptr_dist = (ptr_attn.expand_as(valid_next_word) * valid_next_word).sum(0).squeeze()
                 p = lambdah * ptr_dist + (1 - lambdah) * vocab_loss
             #     ###
-            # mult unk embedding * rnn_out, balnce with params like cache theta, lambdah
             #     target_loss = p[targets[idx].data]
             #     loss += (-torch.log(target_loss)).data[0]
-
+        # with pointer
         word_weights = output.squeeze().data.div(args.temperature).exp().cpu()
         word_idx = torch.multinomial(p.data, 1)[0]
+
+        #without pointer_history
+        word_weights_no = output.squeeze().data.div(args.temperature).exp().cpu()
+        word_idx_no = torch.multinomial(vocab_loss, 1)[0]
+
         #word_idx = torch.multinomial(word_weights, 1)[0]
         input.data.fill_(word_idx)
         word = corpus.dictionary.idx2word[word_idx]
+        word_no = corpus.dictionary.idx2word[word_idx]
 
         pred_str = pred_str + ' ' + word
+        pred_str2 = pred_str2 + ' ' + word
 
         outf.write(word + ('\n' if i % 20 == 19 else ' '))
 
@@ -185,3 +189,4 @@ with open(args.outf, 'w') as outf:
             print('| Generated {}/{} words'.format(i, args.words))
 
 print (pred_str)
+print (pred_str2)

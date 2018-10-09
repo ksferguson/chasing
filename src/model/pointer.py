@@ -7,7 +7,6 @@
 # See LICENSE_awd-lstm-lm for original LICENSE
 #
 ###############################################################################
-
 import argparse
 import time
 import math
@@ -22,10 +21,8 @@ import model
 from utils import batchify, get_batch, repackage_hidden
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
-parser.add_argument('--data', type=str, default='data/penn',
+parser.add_argument('--data', type=str, default='/root/WT2/',
                     help='location of the data corpus')
-parser.add_argument('--model', type=str, default='LSTM',
-                    help='type of recurrent net (LSTM, QRNN)')
 parser.add_argument('--save', type=str,default='best.pt',
                     help='model to use the pointer over')
 parser.add_argument('--cuda', action='store_false',
@@ -68,7 +65,6 @@ def one_hot(idx, size, cuda=True):
 
 def evaluate(data_source, batch_size=10, window=args.window):
     # Turn on evaluation mode which disables dropout.
-    if args.model == 'QRNN': model.reset()
     model.eval()
     total_loss = 0
     ntokens = len(corpus.dictionary)
@@ -85,9 +81,9 @@ def evaluate(data_source, batch_size=10, window=args.window):
         # Fill pointer history
         start_idx = len(next_word_history) if next_word_history is not None else 0
         next_word_history = torch.cat([one_hot(t.data[0], ntokens) for t in targets]) if next_word_history is None else torch.cat([next_word_history, torch.cat([one_hot(t.data[0], ntokens) for t in targets])])
-        #print(next_word_history)
+        print(next_word_history.size())
         pointer_history = Variable(rnn_out.data) if pointer_history is None else torch.cat([pointer_history, Variable(rnn_out.data)], dim=0)
-        #print(pointer_history)
+        print(pointer_history.size())
         ###
         # Built-in cross entropy
         # total_loss += len(data) * criterion(output_flat, targets).data[0]
