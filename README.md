@@ -1,5 +1,5 @@
-# Chasing the Tail (of the Word Frequency Distribution)
-NLP Transfer Learning with Rare Words
+# Chasing the Flagellum
+Rare Words for Text Generation
 
 ## Project Structure:
 - **src** : Source code for production within structured directory
@@ -13,22 +13,25 @@ NLP Transfer Learning with Rare Words
 - Packages and software needed to build the environment
 
 #### Base environment
-- (Easy Way) EC2 Instance on AWS: Deep Learning AMI (Ubuntu) Version 13.0 (ami-00499ff523cc859e6), includes prebuilt env 'pytorch_p36' (i.e. source activate pytorch_p36):
-  - Anaconda
-  - Python 3.6
-  - PyTorch 0.4.1
 
-- (Alternative) Build an env:
-  - Install Anaconda and setup environment
-  - Install Python 3.6
-  - Install PyTorch 0.4.1
+```bash
+#assumes Anaconda installed with 'base' environment
+. activate base
+conda create --name chasing python=3.6
+. activate chasing
+conda install pytorch=0.1.12 -c soumith
+conda install cython
+pip install streamlit
+```
+
+
 
 #### Project Code
-##### Note: Project includes a copy of https://github.com/salesforce/awd-lstm-lm
+##### Note: Project includes a copy of https://github.com/salesforce/awd-lstm-lm, pulled with Tag: PyTorch==0.1.12
 
 ```bash
 # Clone project
-git clone https://github.com/ksferguson/chasing-the-tail
+git clone https://github.com/ksferguson/chasing
 ```
 
 
@@ -72,24 +75,19 @@ git clone https://github.com/ksferguson/chasing-the-tail
 # Step 2
 ```
 
-## Build Model
-- Include instructions of how to build the model
-- This can be done either locally or on the cloud
+## Train Model
+### Initial training
+```bash
+python main.py --batch_size 20 --data data/penn --dropouti 0.4 --seed 28 --epoch 300 --save PTB.pt
 ```
-# Example
-
-# Step 1
-# Step 2
+### Second Stage training
+```bash
+python finetune.py --batch_size 20 --data data/penn --dropouti 0.4 --seed 28 --epoch 300 --save PTB.pt
 ```
 
-## Serve Model
-- Include instructions of how to set up a REST or RPC endpoint
-- This is for running remote inference via a custom model
-```
-# Example
+### Generate
+```bash
 
-# Step 1
-# Step 2
 ```
 
 ## Analysis
