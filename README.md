@@ -5,13 +5,14 @@ A language models is a Recurrent Neural Network typically trained on a large cor
 
 Aside from say the top few hundred words, most words are very infrequent, making it challenging for a language model to predict the next word. This project explores how we can better generate the next word in an expression by applying technique(s) designed to improve the performance of rare words.  
 
+For more information about the project, you can review a presentation here: [bit.ly/ksf_demo](bit.ly/ksf_demo).
+
 ## Requisites
 
 #### Base environment
 
 ```bash
-#assumes Anaconda installed with 'base' environment
-. activate base
+#assumes Anaconda installed
 conda create --name chasing python=3.6
 . activate chasing
 conda install pytorch=0.1.12 -c soumith
@@ -28,13 +29,22 @@ git clone https://github.com/ksferguson/chasing
 
 Note: This project started from a copy of https://github.com/salesforce/awd-lstm-lm, pulled with Tag: PyTorch==0.1.12
 
+For convenience, the model folder contains a symbolic link to the actual data folder. This can be created by:
+
+```bash
+cd src/Model
+ln -s ../../data data
+```
+
 
 ## Train Model
 ### Initial training
 ```bash
 python main.py --batch_size 40 --data data/penn --dropouti 0.4 --seed 28 --epoch 300 --save PTB.pt
 ```
-You may want to copy the model PTB.pt to save the state before proceeding to second stage training.
+Note the batch size was set to 40 here. This setting used less than a third of the GPU memory on a AWS P2.xlarge Tesla K80 w 12GB memory on the GPU.
+
+*You may want to copy the model PTB.pt to save the state of the model before proceeding to second stage training.*
 
 ### Second Stage training
 ```bash
