@@ -29,13 +29,12 @@ git clone https://github.com/ksferguson/chasing
 
 Note: This project started from a copy of https://github.com/salesforce/awd-lstm-lm, pulled with Tag: PyTorch==0.1.12
 
-For convenience, the model folder contains a symbolic link to the actual data folder. This can be created by:
+To better match the original code base, the model folder contains a symbolic link to the actual data folder. This can be created by:
 
 ```bash
 cd src/Model
 ln -s ../../data data
 ```
-
 
 ## Train Model
 ### Initial training
@@ -44,7 +43,7 @@ python main.py --batch_size 40 --data data/penn --dropouti 0.4 --seed 28 --epoch
 ```
 Note the batch size was set to 40 here. This setting used less than a third of the GPU memory on a AWS P2.xlarge Tesla K80 w 12GB memory on the GPU.
 
-*You may want to copy the model PTB.pt to save the state of the model before proceeding to second stage training.*
+*You probably want to copy the model PTB.pt to save the state of the model before proceeding to second stage training.*
 
 ### Second Stage training
 ```bash

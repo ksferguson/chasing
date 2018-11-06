@@ -66,8 +66,6 @@ def one_hot(idx, size, cuda=True):
     if cuda: v = v.cuda()
     return v
 
-
-
 with open(args.checkpoint, 'rb') as f:
     model = torch.load(f)
 model.eval()
@@ -84,18 +82,16 @@ input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
 if args.cuda:
     input.data = input.data.cuda()
 
-print(args.cuda)
-print(args.context)
-
 #warm up routine
 if args.warmup:
-    #print('** warmup **')
+    print('** warming up model **')
     warmup_str = ''
     with open(args.warmupf) as warmupf:
         warmup_data = warmupf.read()
-        warmup_words = warmup_data.split() + ['<eos>']
+        warmup_words = warmup_data.split()
         for word in warmup_words:
-            warmup_str = warmup_str + ' ' + word
+            preprocessed_word = word
+            warmup_str = warmup_str + ' ' + preprocessed_word
             warmup_word_idx = corpus.dictionary.word2idx[word]
             input.data.fill_(warmup_word_idx)
             output, hidden = model(input, hidden)
@@ -105,11 +101,9 @@ if args.warmup:
 
 #context routine
 context_str = ''
-pred_str = ''
-
+prediction_str = ''
 if len (args.context) > 0:
-    print('** start context **')
-
+    print('** processing current context **')
     next_word_history = None
     pointer_history = None
     context_words = args.context.split()
@@ -120,73 +114,66 @@ if len (args.context) > 0:
         input.data.fill_(context_word_idx)
         output, hidden, rnn_outs, _ = model(input, hidden, return_h=True)
         if args.window > 0:
-            #while stepping thorugh context, record words + hidden states
+            #while stepping thorugh context, record words output + hidden states
             rnn_out = rnn_outs[-1].squeeze(0)
             output_flat = output.view(-1, ntokens)
             next_word_history = one_hot(context_word_idx, ntokens) if next_word_history is None else torch.cat([next_word_history, one_hot(context_word_idx, ntokens)])
-            #print(next_word_history.size())
             pointer_history = rnn_out.data if pointer_history is None else torch.cat([pointer_history, rnn_out.data])
-            #print(pointer_history.size())
         word_weights = output.squeeze().data.div(args.temperature).exp().cpu()
         word_idx = torch.multinomial(word_weights, 1)[0]
         word2 = corpus.dictionary.idx2word[word_idx]
-        pred_str = pred_str + ' ' + word2
-    print (context_str)
-    print (pred_str)
+        prediction_str = prediction_str + ' ' + word2
+    print ('Context: ' + context_str)
+    print ('Prediction: ' + prediction_str)
 
 
 pred_str = ''
 pred_str2 = ''
-print('** start pred w ptr **')
-with open(args.outf, 'w') as outf:
-    for i in range(args.words):
-        output, hidden, rnn_outs, _ = model(input, hidden, return_h=True)
-        if args.window > 0:
-            #while stepping thorugh preds, record words + hidden states
-            rnn_out = rnn_outs[-1].squeeze(0)
-            output_flat = output.view(-1, ntokens)
-            #print(output_flat.size())
-            next_word_history = one_hot(context_word_idx, ntokens) if next_word_history is None else torch.cat([next_word_history, one_hot(context_word_idx, ntokens)])
-            #print(next_word_history.size())
-            pointer_history = rnn_out.data if pointer_history is None else torch.cat([pointer_history, rnn_out.data])
-            #print(pointer_history.size())
-            # pointer_history - fixup code below to calc pointer probs:
-            # from pointer.py
-            softmax_output_flat = torch.nn.functional.softmax(output_flat)
-            theta = args.theta
-            lambdah = args.lambdasm
-            for idx, vocab_loss in enumerate(softmax_output_flat):
-                p = vocab_loss
-            #     if start_idx + idx > window:
-                valid_next_word = next_word_history
-                valid_pointer_history = pointer_history
-                logits = torch.mv(valid_pointer_history, rnn_out.data.view(-1,1).squeeze())
-                ptr_attn = torch.nn.functional.softmax(theta * Variable(logits)).view(-1, 1)
-                ptr_dist = (ptr_attn.expand_as(valid_next_word) * valid_next_word).sum(0).squeeze()
-                p = lambdah * ptr_dist + (1 - lambdah) * vocab_loss
-            #     ###
-            #     target_loss = p[targets[idx].data]
-            #     loss += (-torch.log(target_loss)).data[0]
+print('** start prediction with pointer **')
+#with open(args.outf, 'w') as outf:
+for i in range(args.words):
+    output, hidden, rnn_outs, _ = model(input, hidden, return_h=True)
+    if args.window > 0:
+        #while stepping thorugh preds, record words + hidden states
+        rnn_out = rnn_outs[-1].squeeze(0)
+        output_flat = output.view(-1, ntokens)
+        next_word_history = one_hot(context_word_idx, ntokens) if next_word_history is None else torch.cat([next_word_history, one_hot(context_word_idx, ntokens)])
+        pointer_history = rnn_out.data if pointer_history is None else torch.cat([pointer_history, rnn_out.data])
+        softmax_output_flat = torch.nn.functional.softmax(output_flat)
+        theta = args.theta
+        lambdah = args.lambdasm
+        vocab_loss = softmax_output_flat[0]
+        p = vocab_loss
+        #     if start_idx + idx > window:
+        valid_next_word = next_word_history
+        valid_pointer_history = pointer_history
+        logits = torch.mv(valid_pointer_history, rnn_out.data.view(-1,1).squeeze())
+        ptr_attn = torch.nn.functional.softmax(theta * Variable(logits)).view(-1, 1)
+        ptr_dist = (ptr_attn.expand_as(valid_next_word) * valid_next_word).sum(0).squeeze()
+        p = lambdah * ptr_dist + (1 - lambdah) * vocab_loss
+        #     ###
+        #     target_loss = p[targets[idx].data]
+        #     loss += (-torch.log(target_loss)).data[0]
         # with pointer
-        word_weights = output.squeeze().data.div(args.temperature).exp().cpu()
+        #word_weights = output.squeeze().data.div(args.temperature).exp().cpu()
         word_idx = torch.multinomial(p.data, 1)[0]
 
         #without pointer_history
-        word_weights_no = output.squeeze().data.div(args.temperature).exp().cpu()
-        word_idx_no = torch.multinomial(vocab_loss, 1)[0]
+        word_weights_no_ptr = output.squeeze().data.div(args.temperature).exp().cpu()
+        word_idx_no_ptr = torch.multinomial(vocab_loss.data, 1)[0]
 
         #word_idx = torch.multinomial(word_weights, 1)[0]
         input.data.fill_(word_idx)
         word = corpus.dictionary.idx2word[word_idx]
-        word_no = corpus.dictionary.idx2word[word_idx]
+        word_no = corpus.dictionary.idx2word[word_idx_no_ptr]
 
         pred_str = pred_str + ' ' + word
-        pred_str2 = pred_str2 + ' ' + word
+        pred_str2 = pred_str2 + ' ' + word_no
 
-        outf.write(word + ('\n' if i % 20 == 19 else ' '))
+        #outf.write(word + ('\n' if i % 20 == 19 else ' '))
 
-        if i % args.log_interval == 0:
-            print('| Generated {}/{} words'.format(i, args.words))
+#        if i % args.log_interval == 0:
+#            print('| Generated {}/{} words'.format(i, args.words))
 
-print (pred_str)
-print (pred_str2)
+print ('Pointer: ' + pred_str)
+print ('No Pointer: ' + pred_str2)
